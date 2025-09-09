@@ -1,3 +1,4 @@
+
 import React from 'react';
 import type { TrackInfo } from '../types';
 import StarRating from './StarRating';
@@ -6,10 +7,13 @@ import { YouTubeIcon } from './icons/YouTubeIcon';
 interface TracklistItemProps {
   trackNumber: number;
   track: TrackInfo;
+  currentUserId: string;
   onRatingChange: (rating: number) => void;
 }
 
-const TracklistItem: React.FC<TracklistItemProps> = ({ trackNumber, track, onRatingChange }) => {
+const TracklistItem: React.FC<TracklistItemProps> = ({ trackNumber, track, currentUserId, onRatingChange }) => {
+  const userRating = track.ratings[currentUserId] || 0;
+
   return (
     <div className="p-4 rounded-lg bg-gray-900/50 border border-gray-700/50">
       <div className="flex flex-col sm:flex-row justify-between sm:items-start gap-4">
@@ -21,7 +25,7 @@ const TracklistItem: React.FC<TracklistItemProps> = ({ trackNumber, track, onRat
           <p className="text-gray-400 mt-1 pl-7 text-sm">{track.description}</p>
         </div>
         <div className="flex-shrink-0 flex sm:flex-col items-end gap-4 pl-7 sm:pl-0">
-            <StarRating rating={track.rating || 0} onRatingChange={onRatingChange} />
+            <StarRating rating={userRating} onRatingChange={onRatingChange} />
              <a 
                 href={track.youtubeMusicUrl}
                 target="_blank"

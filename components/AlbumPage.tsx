@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from 'react';
 import type { CollectionAlbumInfo, AlbumCondition, User } from '../types';
 import StarRating from './StarRating';
@@ -73,19 +74,26 @@ const AlbumPage: React.FC<AlbumPageProps> = (props) => {
     
     const otherUsers = allUsers.filter(u => u.id !== currentUser.id);
 
-    const owners = otherUsers.map(user => ({
-        user,
-        album: user.collection.find(a => getAlbumId(a) === albumId && a.isPublic)
-    })).filter((item): item is { user: User, album: CollectionAlbumInfo } => !!item.album);
+    const owners = otherUsers.map(user => {
+        const isOwner = user.collection.some(a => getAlbumId(a) === albumId) || user.tradeList.some(a => getAlbumId(a) === albumId);
+        return isOwner ? user : null;
+    }).filter((u): u is User => u !== null);
 
     if (owners.length === 0) return null;
 
-    const ratings = owners.map(o => o.album!.rating).filter((r): r is number => r !== undefined && r > 0);
+    const ratings = owners.map(u => album.ratings[u.id]).filter((r): r is number => r !== undefined && r > 0);
     const averageRating = ratings.length > 0 ? ratings.reduce((sum, r) => sum + r, 0) / ratings.length : 0;
 
-    const comments = owners.flatMap(o => o.album!.comments.map(c => ({...c, user: o.user}))).sort((a,b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+    const comments = owners.flatMap(u => (album.userComments[u.id] || []).map(c => ({...c, user: u}))).sort((a,b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 
-    const tradeOffers = owners.filter(o => o.album!.forTrade).map(o => ({ user: o.user, album: o.album! }));
+    const tradeOffers = allUsers
+        .filter(u => u.id !== currentUser.id)
+        .map(user => ({
+            user,
+            album: user.tradeList.find(a => getAlbumId(a) === albumId)
+        }))
+        .filter((item): item is { user: User, album: CollectionAlbumInfo } => !!item.album);
+
 
     return {
         ownerCount: owners.length,
@@ -95,6 +103,9 @@ const AlbumPage: React.FC<AlbumPageProps> = (props) => {
         tradeOffers,
     };
   }, [album, allUsers, currentUser.id]);
+
+  const userRating = album.ratings[currentUser.id] || 0;
+  const userComments = album.userComments[currentUser.id] || [];
 
   return (
     <div className="max-w-4xl mx-auto animate-fade-in">
@@ -118,7 +129,7 @@ const AlbumPage: React.FC<AlbumPageProps> = (props) => {
             </div>
             <div>
                 <h3 className="text-sm font-semibold text-gray-400 mb-1">Your Overall Rating</h3>
-                <StarRating rating={album.rating || 0} onRatingChange={onUpdateAlbumRating} />
+                <StarRating rating={userRating} onRatingChange={onUpdateAlbumRating} />
             </div>
           </div>
         </div>
@@ -210,6 +221,7 @@ const AlbumPage: React.FC<AlbumPageProps> = (props) => {
                             key={track.title}
                             trackNumber={index + 1}
                             track={track}
+                            currentUserId={currentUser.id}
                             onRatingChange={(rating) => onUpdateTrackRating(track.title, rating)}
                         />
                     ))}
@@ -255,7 +267,7 @@ const AlbumPage: React.FC<AlbumPageProps> = (props) => {
                              {communityActivity.comments.length > 0 ? (
                                 <div className="space-y-3">
                                   {communityActivity.comments.map(c => (
-                                    <div key={c.timestamp} className="flex items-start gap-3">
+                                    <div key={`${c.user.id}-${c.timestamp}`} className="flex items-start gap-3">
                                       <button onClick={() => onViewProfile(c.user.id)} className="flex-shrink-0" title={`View ${c.user.name}'s profile`}>
                                         <img src={c.user.avatarUrl} alt={c.user.name} className="w-9 h-9 rounded-full mt-1"/>
                                       </button>
@@ -304,7 +316,7 @@ const AlbumPage: React.FC<AlbumPageProps> = (props) => {
             </DetailSection>
             
             <DetailSection title="Your Comments">
-                <Comments comments={album.comments} onAddComment={onAddComment} />
+                <Comments comments={userComments} onAddComment={onAddComment} />
             </DetailSection>
 
         </div>

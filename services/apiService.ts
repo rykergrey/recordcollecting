@@ -1,3 +1,4 @@
+
 import { GoogleGenAI, Type } from "@google/genai";
 import { currentUserData, allUsersData, activityFeedData, tradeOffersData } from './mockData';
 import type { 
@@ -71,41 +72,48 @@ export const getStores = async (): Promise<string[]> => {
 
 export const updateAlbumRating = async (albumId: string, rating: number): Promise<CollectionAlbumInfo> => {
     await sleep(300);
-    let targetAlbum: CollectionAlbumInfo | undefined = currentUser.collection.find(a => getAlbumId(a) === albumId);
-    if (!targetAlbum) {
-         targetAlbum = currentUser.tradeList.find(a => getAlbumId(a) === albumId);
-    }
+    const collection = [...currentUser.collection, ...currentUser.tradeList];
+    const targetAlbum = collection.find(a => getAlbumId(a) === albumId);
+    
     if (!targetAlbum) throw new Error("Album not found in collection or trade list");
     
-    targetAlbum.rating = rating;
+    targetAlbum.ratings[currentUser.id] = rating;
     return Promise.resolve(JSON.parse(JSON.stringify(targetAlbum)));
 }
 
 export const updateTrackRating = async (albumId: string, trackTitle: string, rating: number): Promise<CollectionAlbumInfo> => {
      await sleep(200);
-    let targetAlbum: CollectionAlbumInfo | undefined = currentUser.collection.find(a => getAlbumId(a) === albumId);
-    if (!targetAlbum) {
-         targetAlbum = currentUser.tradeList.find(a => getAlbumId(a) === albumId);
-    }
+    const collection = [...currentUser.collection, ...currentUser.tradeList];
+    const targetAlbum = collection.find(a => getAlbumId(a) === albumId);
     if (!targetAlbum) throw new Error("Album not found");
 
     const track = targetAlbum.tracklist.find(t => t.title === trackTitle);
     if (track) {
-        track.rating = rating;
+        if (!track.ratings) {
+            track.ratings = {};
+        }
+        track.ratings[currentUser.id] = rating;
     }
     return Promise.resolve(JSON.parse(JSON.stringify(targetAlbum)));
 }
 
 export const addComment = async (albumId: string, text: string): Promise<CollectionAlbumInfo> => {
     await sleep(400);
-    let targetAlbum: CollectionAlbumInfo | undefined = currentUser.collection.find(a => getAlbumId(a) === albumId);
-    if (!targetAlbum) {
-         targetAlbum = currentUser.tradeList.find(a => getAlbumId(a) === albumId);
-    }
+    const collection = [...currentUser.collection, ...currentUser.tradeList];
+    const targetAlbum = collection.find(a => getAlbumId(a) === albumId);
     if (!targetAlbum) throw new Error("Album not found");
 
-    targetAlbum.comments.push({ text, timestamp: new Date().toISOString() });
+    if (!targetAlbum.userComments[currentUser.id]) {
+        targetAlbum.userComments[currentUser.id] = [];
+    }
+    targetAlbum.userComments[currentUser.id].push({ text, timestamp: new Date().toISOString() });
     return Promise.resolve(JSON.parse(JSON.stringify(targetAlbum)));
+}
+
+const findSharersOf = (user: User): User[] => {
+    return (user.sharedLibraryWith || [])
+        .map(userId => users.find(u => u.id === userId))
+        .filter((u): u is User => !!u);
 }
 
 export const addToCollection = async (analysis: AlbumAnalysisResult, purchaseDetails: { price: number, store: string }, userImage?: string) => {
@@ -115,13 +123,18 @@ export const addToCollection = async (analysis: AlbumAnalysisResult, purchaseDet
         isPublic: true,
         coverArtUrls: userImage ? [userImage] : analysis.coverArtUrls,
         provenance: [{ type: 'purchase', from: purchaseDetails.store, price: purchaseDetails.price, date: new Date().toISOString() }],
-        comments: [],
-        tracklist: analysis.tracklist.map(t => ({ ...t, rating: 0 })),
+        ratings: {},
+        userComments: {},
+        tracklist: analysis.tracklist.map(t => ({ ...t, ratings: {} })),
     };
     
-    if (![...currentUser.collection, ...currentUser.tradeList].some(item => getAlbumId(item) === getAlbumId(newCollectionItem))) {
-        currentUser.collection.unshift(newCollectionItem);
-        currentUser.wishlist = currentUser.wishlist.filter(item => getAlbumId(item) !== getAlbumId(newCollectionItem));
+    const allSharers = [currentUser, ...findSharersOf(currentUser)];
+
+    for (const user of allSharers) {
+        if (![...user.collection, ...user.tradeList].some(item => getAlbumId(item) === getAlbumId(newCollectionItem))) {
+            user.collection.unshift(newCollectionItem);
+            user.wishlist = user.wishlist.filter(item => getAlbumId(item) !== getAlbumId(newCollectionItem));
+        }
     }
     
     const allStores = [...new Set(currentUser.collection.flatMap(a => a.provenance.filter(p => p.type === 'purchase').map(p => p.from)))];
@@ -151,7 +164,7 @@ export const updateWishlistPriority = async (albumId: string, priority: 'High' |
     return Promise.resolve(JSON.parse(JSON.stringify(currentUser.wishlist)));
 }
 
-export const toggleFollowUser = async (userId: string): Promise<User> => {
+export const toggleFollowUser = async (userId: string) => {
     await sleep(300);
     const followedSet = new Set(currentUser.followedUserIds);
     if (followedSet.has(userId)) {
@@ -160,42 +173,60 @@ export const toggleFollowUser = async (userId: string): Promise<User> => {
         followedSet.add(userId);
     }
     currentUser.followedUserIds = Array.from(followedSet);
-    return Promise.resolve(JSON.parse(JSON.stringify(currentUser)));
+    return {
+        updatedCurrentUser: JSON.parse(JSON.stringify(currentUser)),
+        updatedAllUsers: JSON.parse(JSON.stringify(users)),
+    };
 }
 
-export const updateTradeStatus = async (albumId: string, forTrade: boolean, condition?: AlbumCondition): Promise<CollectionAlbumInfo> => {
+export const updateTradeStatus = async (albumId: string, forTrade: boolean, condition?: AlbumCondition) => {
     await sleep(400);
-    let albumToUpdate: CollectionAlbumInfo | undefined;
+    
+    const allSharers = [currentUser, ...findSharersOf(currentUser)];
+    let updatedAlbum: CollectionAlbumInfo | undefined;
 
-    if (forTrade) { // Moving from collection to trade list
-        albumToUpdate = currentUser.collection.find(a => getAlbumId(a) === albumId);
-        if (albumToUpdate) {
-            currentUser.collection = currentUser.collection.filter(a => getAlbumId(a) !== albumId);
-            albumToUpdate.forTrade = true;
-            albumToUpdate.condition = condition;
-            currentUser.tradeList.push(albumToUpdate);
+    for (const user of allSharers) {
+        let albumToUpdate: CollectionAlbumInfo | undefined;
+        if (forTrade) {
+            albumToUpdate = user.collection.find(a => getAlbumId(a) === albumId);
+            if (albumToUpdate) {
+                user.collection = user.collection.filter(a => getAlbumId(a) !== albumId);
+                albumToUpdate.forTrade = true;
+                albumToUpdate.condition = condition;
+                user.tradeList.push(albumToUpdate);
+            }
+        } else {
+            albumToUpdate = user.tradeList.find(a => getAlbumId(a) === albumId);
+            if (albumToUpdate) {
+                user.tradeList = user.tradeList.filter(a => getAlbumId(a) !== albumId);
+                albumToUpdate.forTrade = false;
+                delete albumToUpdate.condition;
+                user.collection.push(albumToUpdate);
+            }
         }
-    } else { // Moving from trade list to collection
-        albumToUpdate = currentUser.tradeList.find(a => getAlbumId(a) === albumId);
-        if (albumToUpdate) {
-            currentUser.tradeList = currentUser.tradeList.filter(a => getAlbumId(a) !== albumId);
-            albumToUpdate.forTrade = false;
-            delete albumToUpdate.condition;
-            currentUser.collection.push(albumToUpdate);
+        
+        if (!albumToUpdate) {
+            albumToUpdate = user.tradeList.find(a => getAlbumId(a) === albumId);
+            if (albumToUpdate) {
+                albumToUpdate.condition = condition;
+            } else if (user.id === currentUser.id) {
+                throw new Error("Album not found");
+            }
+        }
+
+        if (user.id === currentUser.id) {
+            updatedAlbum = albumToUpdate;
         }
     }
     
-    if (!albumToUpdate) {
-        // If it wasn't moved, it might just be a condition update for an existing trade item
-        albumToUpdate = currentUser.tradeList.find(a => getAlbumId(a) === albumId);
-        if (albumToUpdate) {
-            albumToUpdate.condition = condition;
-        } else {
-            throw new Error("Album not found");
-        }
-    }
-    return Promise.resolve(JSON.parse(JSON.stringify(albumToUpdate)));
+    if (!updatedAlbum) throw new Error("Current user's album not found after update");
+
+    return {
+        updatedAlbum: JSON.parse(JSON.stringify(updatedAlbum)),
+        updatedCollection: JSON.parse(JSON.stringify([...currentUser.collection, ...currentUser.tradeList]))
+    };
 }
+
 
 export const sendTradeOffer = async (offer: { toUser: User; wantedAlbum: CollectionAlbumInfo; offeredAlbums: OfferedAlbum[] }): Promise<TradeOffer> => {
     await sleep(500);
@@ -251,9 +282,86 @@ export const rejectTrade = async (offerId: string): Promise<TradeOffer[]> => {
     return Promise.resolve(JSON.parse(JSON.stringify(tradeOffers)));
 }
 
+// --- Library Sharing API ---
+
+export const sendLibraryShareRequest = async (toUserId: string) => {
+    await sleep(300);
+    const toUser = users.find(u => u.id === toUserId);
+    if (!toUser) throw new Error("User not found");
+    
+    currentUser.libraryShareRequests![toUserId] = 'sent';
+    toUser.libraryShareRequests![currentUser.id] = 'received';
+    
+    return {
+        updatedCurrentUser: JSON.parse(JSON.stringify(currentUser)),
+        updatedAllUsers: JSON.parse(JSON.stringify(users)),
+    };
+};
+
+export const rejectLibraryShareRequest = async (fromUserId: string) => {
+    await sleep(300);
+    const fromUser = users.find(u => u.id === fromUserId);
+    if (!fromUser) throw new Error("User not found");
+
+    delete currentUser.libraryShareRequests![fromUserId];
+    delete fromUser.libraryShareRequests![currentUser.id];
+
+    return {
+        updatedCurrentUser: JSON.parse(JSON.stringify(currentUser)),
+        updatedAllUsers: JSON.parse(JSON.stringify(users)),
+    };
+};
+
+export const acceptLibraryShareRequest = async (fromUserId: string) => {
+    await sleep(800);
+    const fromUser = users.find(u => u.id === fromUserId);
+    if (!fromUser) throw new Error("User not found");
+
+    // Add to shared list
+    currentUser.sharedLibraryWith!.push(fromUserId);
+    fromUser.sharedLibraryWith!.push(currentUser.id);
+
+    // Remove requests
+    delete currentUser.libraryShareRequests![fromUserId];
+    delete fromUser.libraryShareRequests![currentUser.id];
+    
+    // Merge collections
+    const allCollections = [...currentUser.collection, ...currentUser.tradeList, ...fromUser.collection, ...fromUser.tradeList];
+    const collectionMap = new Map<string, CollectionAlbumInfo>();
+    
+    for (const album of allCollections) {
+        const id = getAlbumId(album);
+        if (collectionMap.has(id)) {
+            const existing = collectionMap.get(id)!;
+            // Merge ratings and comments
+            existing.ratings = { ...existing.ratings, ...album.ratings };
+            existing.userComments = { ...existing.userComments, ...album.userComments };
+            album.tracklist.forEach((track, i) => {
+                existing.tracklist[i].ratings = { ...existing.tracklist[i].ratings, ...track.ratings };
+            });
+        } else {
+            collectionMap.set(id, JSON.parse(JSON.stringify(album)));
+        }
+    }
+
+    const mergedFullCollection = Array.from(collectionMap.values());
+    const mergedCollection = mergedFullCollection.filter(a => !a.forTrade);
+    const mergedTradeList = mergedFullCollection.filter(a => a.forTrade);
+
+    currentUser.collection = mergedCollection;
+    currentUser.tradeList = mergedTradeList;
+    fromUser.collection = mergedCollection;
+    fromUser.tradeList = mergedTradeList;
+
+    return {
+        updatedCurrentUser: JSON.parse(JSON.stringify(currentUser)),
+        updatedAllUsers: JSON.parse(JSON.stringify(users)),
+        mergedCollection: JSON.parse(JSON.stringify([...mergedCollection, ...mergedTradeList])),
+    };
+};
+
 
 // --- Rykersoft Analysis API ---
-// These would be replaced by calls to our own backend, which would then call our analysis service securely.
 
 if (!process.env.API_KEY) {
     throw new Error("API_KEY environment variable not set");
@@ -321,7 +429,7 @@ export const getSuggestedTracks = async (albumInfo: { artist: string; album: str
 
 export const getPersonalRecommendation = async (albumInfo: { artist: string; album: string }, collection: CollectionAlbumInfo[]): Promise<string> => {
     await sleep(1500); // Simulate AI thinking
-    const highlyRatedAlbums = collection.filter(album => album.rating && album.rating >= 4).map(album => `- "${album.album}" by ${album.artist} (Genre: ${album.genre}, Rated: ${album.rating}/5)`).join('\n');
+    const highlyRatedAlbums = collection.filter(album => album.ratings[currentUser.id] && album.ratings[currentUser.id] >= 4).map(album => `- "${album.album}" by ${album.artist} (Genre: ${album.genre}, Rated: ${album.ratings[currentUser.id]}/5)`).join('\n');
     const userCollectionPrompt = highlyRatedAlbums.length > 0
         ? `The user's collection includes these highly-rated albums:\n${highlyRatedAlbums}\nBased on this, explain why they might enjoy the album.`
         : 'The user has not rated any albums yet. Generate the recommendation for a new collector.';

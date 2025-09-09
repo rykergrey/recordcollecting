@@ -65,33 +65,34 @@ const App: React.FC = () => {
     const [tradeOffers, setTradeOffers] = useState<TradeOffer[]>([]);
 
     // Load initial data
+    const loadData = async () => {
+        try {
+            setAppIsLoading(true);
+            const [user, collection, wishlist, allUsers, feed, tradeOffersData, storeData] = await Promise.all([
+                api.getCurrentUser(),
+                api.getCollection(),
+                api.getWishlist(),
+                api.getAllUsers(),
+                api.getActivityFeed(),
+                api.getTradeOffers(),
+                api.getStores(),
+            ]);
+            setCurrentUser(user);
+            setMyCollection(collection);
+            setMyWishlist(wishlist);
+            setUsers(allUsers);
+            setActivityFeed(feed);
+            setTradeOffers(tradeOffersData);
+            setStores(storeData);
+        } catch (err) {
+            console.error("Failed to load app data:", err);
+            setError("Could not load application data. Please refresh the page.");
+        } finally {
+            setAppIsLoading(false);
+        }
+    };
+
     useEffect(() => {
-        const loadData = async () => {
-            try {
-                setAppIsLoading(true);
-                const [user, collection, wishlist, allUsers, feed, tradeOffersData, storeData] = await Promise.all([
-                    api.getCurrentUser(),
-                    api.getCollection(),
-                    api.getWishlist(),
-                    api.getAllUsers(),
-                    api.getActivityFeed(),
-                    api.getTradeOffers(),
-                    api.getStores(),
-                ]);
-                setCurrentUser(user);
-                setMyCollection(collection);
-                setMyWishlist(wishlist);
-                setUsers(allUsers);
-                setActivityFeed(feed);
-                setTradeOffers(tradeOffersData);
-                setStores(storeData);
-            } catch (err) {
-                console.error("Failed to load app data:", err);
-                setError("Could not load application data. Please refresh the page.");
-            } finally {
-                setAppIsLoading(false);
-            }
-        };
         loadData();
     }, []);
 
@@ -293,17 +294,28 @@ const App: React.FC = () => {
     };
     
     const handleToggleFollow = async (userId: string) => {
-        const updatedUser = await api.toggleFollowUser(userId);
-        setCurrentUser(updatedUser);
+        const { updatedCurrentUser, updatedAllUsers } = await api.toggleFollowUser(userId);
+        setCurrentUser(updatedCurrentUser);
+        setUsers(updatedAllUsers);
     };
 
     const handleGoToTradeMatches = () => {
         setActiveTab('trades');
     };
 
+    const handleNotificationClick = (id: string, relatedId?: string) => {
+        if (id === 'matches') {
+            setActiveTab('trades');
+        } else if (id === 'offers') {
+            setActiveTab('trades');
+        } else if (id === 'shareRequest' && relatedId) {
+            setCurrentView({ page: 'profile', userId: relatedId });
+        }
+    }
+
     const handleUpdateTradeStatus = async (albumId: string, forTrade: boolean, condition?: AlbumCondition) => {
-        const updatedAlbum = await api.updateTradeStatus(albumId, forTrade, condition);
-        setMyCollection(current => current.map(album => getAlbumId(album) === albumId ? updatedAlbum : album));
+        const { updatedAlbum, updatedCollection } = await api.updateTradeStatus(albumId, forTrade, condition);
+        setMyCollection(updatedCollection);
     };
 
     const handleInitiateTrade = (wantedAlbum: CollectionAlbumInfo, toUser: User) => {
@@ -330,6 +342,25 @@ const App: React.FC = () => {
         setTradeOffers(updatedOffers);
     };
 
+    const handleSendShareRequest = async (toUserId: string) => {
+        const { updatedCurrentUser, updatedAllUsers } = await api.sendLibraryShareRequest(toUserId);
+        setCurrentUser(updatedCurrentUser);
+        setUsers(updatedAllUsers);
+    };
+
+    const handleAcceptShareRequest = async (fromUserId: string) => {
+        const { updatedCurrentUser, updatedAllUsers, mergedCollection } = await api.acceptLibraryShareRequest(fromUserId);
+        setCurrentUser(updatedCurrentUser);
+        setUsers(updatedAllUsers);
+        setMyCollection(mergedCollection);
+    };
+
+    const handleRejectShareRequest = async (fromUserId: string) => {
+        const { updatedCurrentUser, updatedAllUsers } = await api.rejectLibraryShareRequest(fromUserId);
+        setCurrentUser(updatedCurrentUser);
+        setUsers(updatedAllUsers);
+    };
+
     const allPublicUsers = useMemo(() => users.filter(u => u.id !== currentUser?.id), [users, currentUser]);
     
     const tradeMatches = useMemo(() => {
@@ -352,11 +383,22 @@ const App: React.FC = () => {
     const pendingIncomingOffers = useMemo(() => tradeOffers.filter(o => o.toUser.id === currentUser?.id && o.status === 'pending'), [tradeOffers, currentUser]);
     
     const notifications = useMemo(() => {
-        const notifs = [];
+        const notifs: { id: string, text: string, relatedId?: string }[] = [];
         if (tradeMatches.length > 0) notifs.push({ id: 'matches', text: `You have ${tradeMatches.length} new trade match(es)!`});
         if (pendingIncomingOffers.length > 0) notifs.push({ id: 'offers', text: `You have ${pendingIncomingOffers.length} new trade offer(s)!`});
+        
+        const shareRequests = currentUser?.libraryShareRequests || {};
+        Object.entries(shareRequests).forEach(([userId, status]) => {
+            if (status === 'received') {
+                const fromUser = users.find(u => u.id === userId);
+                if(fromUser) {
+                    notifs.push({ id: 'shareRequest', text: `${fromUser.name} wants to share their library.`, relatedId: fromUser.id });
+                }
+            }
+        });
+
         return notifs;
-    }, [tradeMatches.length, pendingIncomingOffers.length]);
+    }, [tradeMatches.length, pendingIncomingOffers.length, currentUser, users]);
 
     const renderTabs = () => (
         <>
@@ -399,7 +441,7 @@ const App: React.FC = () => {
                         onAddToWishlist={scannerOnAddToWishlist}
                         onGoToTradeMatches={handleGoToTradeMatches}
                     />,
-                    'collection': <CollectionPage collection={myCollection} onViewAlbum={handleViewAlbum} />,
+                    'collection': <CollectionPage collection={myCollection} currentUser={currentUser!} onViewAlbum={handleViewAlbum} />,
                     'wishlist': <WishlistPage 
                                     wishlist={myWishlist} 
                                     onUpdatePriority={handleUpdateWishlistPriority}
@@ -481,13 +523,12 @@ const App: React.FC = () => {
                         onBack={handleReturnToList}
                         onToggleFollow={handleToggleFollow}
                         onInitiateTrade={handleInitiateTrade}
+                        onSendShareRequest={handleSendShareRequest}
+                        onAcceptShareRequest={handleAcceptShareRequest}
+                        onRejectShareRequest={handleRejectShareRequest}
                         onViewAlbum={(album) => {
-                            // Can only view albums in your own collection for now
-                            // FIX: The `album` parameter from `onViewAlbum` is typed as `AlbumInfo`, which lacks the `provenance` property.
-                            // We cast it to `CollectionAlbumInfo` because `UserProfilePage` only passes full collection albums to this handler.
-                            // The check for `provenance` itself provides runtime safety.
                             const collectionAlbum = album as CollectionAlbumInfo;
-                            if (collectionAlbum.provenance && collectionAlbum.provenance.length > 0) { // Simple check if it's a full collection album
+                            if (collectionAlbum.provenance && collectionAlbum.provenance.length > 0) {
                                  handleViewAlbum(collectionAlbum);
                             }
                         }}
@@ -509,7 +550,7 @@ const App: React.FC = () => {
             <Header 
                 user={currentUser} 
                 notifications={notifications}
-                onNotificationClick={handleGoToTradeMatches}
+                onNotificationClick={handleNotificationClick}
             />
             <main className="container mx-auto px-4 py-8">
                 {renderContent()}

@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from 'react';
 import type { User, ActivityEvent, CollectionAlbumInfo, AlbumInfo } from '../types';
 import AlbumCard from './AlbumCard';
@@ -9,6 +10,9 @@ import { RecordIcon } from './icons/RecordIcon';
 import { StarIcon } from './icons/StarIcon';
 import { CommunityIcon } from './icons/CommunityIcon';
 import { ActivityType } from '../types';
+import { ShareIcon } from './icons/ShareIcon';
+import { CheckIcon } from './icons/CheckIcon';
+import { CloseIcon } from './icons/CloseIcon';
 
 interface UserProfilePageProps {
     user: User;
@@ -19,6 +23,9 @@ interface UserProfilePageProps {
     onToggleFollow: (userId: string) => void;
     onInitiateTrade: (wantedAlbum: CollectionAlbumInfo, toUser: User) => void;
     onViewAlbum: (album: AlbumInfo) => void;
+    onSendShareRequest: (userId: string) => void;
+    onAcceptShareRequest: (userId: string) => void;
+    onRejectShareRequest: (userId: string) => void;
 }
 
 const Section: React.FC<{ title: string, children: React.ReactNode, count?: number, icon: React.ReactElement }> = ({ title, children, count, icon }) => (
@@ -32,7 +39,10 @@ const Section: React.FC<{ title: string, children: React.ReactNode, count?: numb
 );
 
 const UserProfilePage: React.FC<UserProfilePageProps> = (props) => {
-    const { user, currentUser, isFollowing, activityFeed, onBack, onToggleFollow, onInitiateTrade, onViewAlbum } = props;
+    const { 
+        user, currentUser, isFollowing, activityFeed, onBack, onToggleFollow, onInitiateTrade, 
+        onViewAlbum, onSendShareRequest, onAcceptShareRequest, onRejectShareRequest 
+    } = props;
     const [isCollectionExpanded, setIsCollectionExpanded] = useState(false);
     
     const isCurrentUserProfile = user.id === currentUser.id;
@@ -58,6 +68,57 @@ const UserProfilePage: React.FC<UserProfilePageProps> = (props) => {
         [ActivityType.NEW_REVIEW]: `reviewed`,
     };
 
+    const renderShareButton = () => {
+        if (isCurrentUserProfile) return null;
+
+        const isMutualFollow = isFollowing && user.followedUserIds.includes(currentUser.id);
+        const isSharing = currentUser.sharedLibraryWith?.includes(user.id);
+        const requestStatus = currentUser.libraryShareRequests?.[user.id];
+
+        if (isSharing) {
+            return (
+                <div className="inline-flex items-center gap-2 text-sm font-semibold py-2 px-4 rounded-full bg-green-500/20 text-green-300">
+                    <CheckIcon className="w-5 h-5" />
+                    Libraries Shared
+                </div>
+            );
+        }
+
+        if (isMutualFollow) {
+            if (requestStatus === 'sent') {
+                return (
+                    <button disabled className="inline-flex items-center gap-2 text-sm font-semibold py-2 px-4 rounded-full bg-gray-600 text-white cursor-not-allowed">
+                        <ShareIcon className="w-5 h-5" />
+                        Request Sent
+                    </button>
+                );
+            }
+            if (requestStatus === 'received') {
+                return (
+                    <div className="flex flex-col sm:flex-row gap-2">
+                        <span className="text-sm text-gray-300 self-center">Share request received:</span>
+                        <div className="flex gap-2">
+                            <button onClick={() => onAcceptShareRequest(user.id)} className="inline-flex items-center gap-1 text-sm font-bold py-2 px-3 rounded-full bg-green-600 hover:bg-green-500 text-white">
+                                <CheckIcon className="w-4 h-4" /> Accept
+                            </button>
+                             <button onClick={() => onRejectShareRequest(user.id)} className="inline-flex items-center gap-1 text-sm font-bold py-2 px-3 rounded-full bg-red-600 hover:bg-red-500 text-white">
+                                <CloseIcon className="w-4 h-4" /> Decline
+                            </button>
+                        </div>
+                    </div>
+                );
+            }
+            return (
+                <button onClick={() => onSendShareRequest(user.id)} className="inline-flex items-center gap-2 text-sm font-semibold py-2 px-4 rounded-full bg-teal-600 hover:bg-teal-500 text-white transition">
+                    <ShareIcon className="w-5 h-5" />
+                    Share Library
+                </button>
+            );
+        }
+        return null;
+    }
+
+
     return (
         <div className="max-w-4xl mx-auto animate-fade-in">
             <button onClick={onBack} className="mb-6 text-teal-400 hover:text-teal-300 font-semibold">
@@ -72,13 +133,16 @@ const UserProfilePage: React.FC<UserProfilePageProps> = (props) => {
                         <h1 className="text-4xl font-bold text-white">{user.name}</h1>
                     </div>
                     {!isCurrentUserProfile && (
-                        <button 
-                            onClick={() => onToggleFollow(user.id)}
-                            className={`inline-flex items-center gap-2 text-sm font-semibold py-2 px-4 rounded-full transition ${isFollowing ? 'bg-teal-500/20 text-teal-300' : 'bg-gray-600 hover:bg-gray-500 text-white'}`}
-                        >
-                            {isFollowing ? <UserFollowingIcon className="w-5 h-5" /> : <UserFollowIcon className="w-5 h-5" />}
-                            {isFollowing ? 'Following' : 'Follow'}
-                        </button>
+                        <div className="flex flex-col items-center gap-3">
+                            <button 
+                                onClick={() => onToggleFollow(user.id)}
+                                className={`inline-flex items-center gap-2 text-sm font-semibold py-2 px-4 rounded-full transition ${isFollowing ? 'bg-teal-500/20 text-teal-300' : 'bg-gray-600 hover:bg-gray-500 text-white'}`}
+                            >
+                                {isFollowing ? <UserFollowingIcon className="w-5 h-5" /> : <UserFollowIcon className="w-5 h-5" />}
+                                {isFollowing ? 'Following' : 'Follow'}
+                            </button>
+                            {renderShareButton()}
+                        </div>
                     )}
                 </div>
 
@@ -88,7 +152,7 @@ const UserProfilePage: React.FC<UserProfilePageProps> = (props) => {
                         <>
                             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
                                 {displayedCollection.map(album => (
-                                    <AlbumCard key={`${album.artist}-${album.album}`} album={album} onClick={() => onViewAlbum(album)} />
+                                    <AlbumCard key={`${album.artist}-${album.album}`} album={album} currentUser={currentUser} onClick={() => onViewAlbum(album)} />
                                 ))}
                             </div>
                             {publicCollection.length > 8 && (

@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { RecordIcon } from './icons/RecordIcon';
 import { NotificationIcon } from './icons/NotificationIcon';
@@ -5,15 +6,15 @@ import type { User } from '../types';
 
 interface HeaderProps {
     user: User;
-    notifications: { id: string, text: string }[];
-    onNotificationClick: (id: string) => void;
+    notifications: { id: string, text: string, relatedId?: string }[];
+    onNotificationClick: (id: string, relatedId?: string) => void;
 }
 
 const Header: React.FC<HeaderProps> = ({ user, notifications, onNotificationClick }) => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
-  const handleNotificationItemClick = (id: string) => {
-    onNotificationClick(id);
+  const handleNotificationItemClick = (notif: HeaderProps['notifications'][0]) => {
+    onNotificationClick(notif.id, notif.relatedId);
     setIsDropdownOpen(false);
   };
 
@@ -42,9 +43,9 @@ const Header: React.FC<HeaderProps> = ({ user, notifications, onNotificationClic
                   {notifications.length > 0 ? (
                     <ul className="py-1">
                       {notifications.map(notif => (
-                        <li key={notif.id}>
+                        <li key={`${notif.id}-${notif.relatedId}`}>
                           <button
-                            onClick={() => handleNotificationItemClick(notif.id)}
+                            onClick={() => handleNotificationItemClick(notif)}
                             className="w-full text-left px-3 py-2 text-sm text-gray-200 hover:bg-gray-700 transition"
                           >
                             {notif.text}

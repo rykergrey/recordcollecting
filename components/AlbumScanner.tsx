@@ -102,10 +102,12 @@ const AlbumScanner: React.FC<AlbumScannerProps> = (props) => {
 
     if (owners.length === 0) return null;
 
-    const ratings = owners.map(o => o.album!.rating).filter((r): r is number => r !== undefined && r > 0);
+    // FIX: Access the user's rating from the 'ratings' map using the user's ID.
+    const ratings = owners.map(o => o.album!.ratings[o.user.id]).filter((r): r is number => r !== undefined && r > 0);
     const averageRating = ratings.length > 0 ? ratings.reduce((sum, r) => sum + r, 0) / ratings.length : 0;
 
-    const comments = owners.flatMap(o => o.album!.comments.map(c => ({...c, user: o.user}))).sort((a,b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+    // FIX: Access user comments from the 'userComments' map and handle cases with no comments.
+    const comments = owners.flatMap(o => (o.album!.userComments[o.user.id] || []).map(c => ({...c, user: o.user}))).sort((a,b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 
     const tradeOffers = owners.filter(o => o.album!.forTrade).map(o => ({ user: o.user, album: o.album! }));
 

@@ -1,3 +1,4 @@
+
 export enum AdviceLevel {
   SKIP = 'SKIP',
   CONSIDER = 'CONSIDER',
@@ -16,7 +17,7 @@ export interface AlbumInfo {
 export interface TrackInfo {
   title: string;
   description: string;
-  rating?: number; // User's rating for the track
+  ratings: Record<string, number>; // User's rating for the track, keyed by userId
   youtubeMusicUrl: string;
 }
 
@@ -57,7 +58,7 @@ export interface AlbumAnalysisResult {
   historicalSignificance: string;
   musicalStyle: string;
   legacy: string;
-  tracklist: Omit<TrackInfo, 'rating'>[]; // Ratings are user-provided
+  tracklist: Omit<TrackInfo, 'ratings'>[]; // Ratings are user-provided
   youtubeLinks: YouTubeLink[];
 }
 
@@ -65,9 +66,9 @@ export interface AlbumAnalysisResult {
 export interface CollectionAlbumInfo extends AlbumAnalysisResult {
   provenance: Provenance[];
   
-  // User's personal ratings and notes
-  rating?: number; // Overall album rating (1-5 stars)
-  comments: Comment[];
+  // User's personal ratings and notes, keyed by userId
+  ratings: Record<string, number>; 
+  userComments: Record<string, Comment[]>;
   tracklist: TrackInfo[]; // Tracklist now includes user ratings
 
   // Social & Trade features
@@ -92,6 +93,8 @@ export interface User {
   wishlist: AlbumInfo[];
   tradeList: CollectionAlbumInfo[];
   followedUserIds: string[];
+  sharedLibraryWith?: string[];
+  libraryShareRequests?: Record<string, 'sent' | 'received'>;
 }
 
 export enum ActivityType {

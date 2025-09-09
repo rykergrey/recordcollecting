@@ -1,16 +1,18 @@
+
 import React, { useState, useMemo } from 'react';
-import type { CollectionAlbumInfo } from '../types';
+import type { CollectionAlbumInfo, User } from '../types';
 import AlbumCard from './AlbumCard';
 import SortFilterControls from './SortFilterControls';
 
 interface CollectionPageProps {
   collection: CollectionAlbumInfo[];
+  currentUser: User;
   onViewAlbum: (album: CollectionAlbumInfo) => void;
 }
 
 type SortKey = 'artist' | 'album' | 'year' | 'rating';
 
-const CollectionPage: React.FC<CollectionPageProps> = ({ collection, onViewAlbum }) => {
+const CollectionPage: React.FC<CollectionPageProps> = ({ collection, currentUser, onViewAlbum }) => {
   const [sortKey, setSortKey] = useState<SortKey>('artist');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [filterGenre, setFilterGenre] = useState<string>('');
@@ -19,7 +21,6 @@ const CollectionPage: React.FC<CollectionPageProps> = ({ collection, onViewAlbum
 
   const genres = useMemo(() => [...new Set(collection.map(a => a.genre).filter(Boolean))].sort(), [collection]);
   const decades = useMemo(() => [...new Set(collection.map(a => `${Math.floor(a.year / 10)}0s`).filter(Boolean))].sort(), [collection]);
-  // FIX: Derive stores from the 'provenance' array, which contains purchase information.
   const stores = useMemo(() => {
     const allStores = collection.flatMap(a =>
       a.provenance
@@ -42,16 +43,23 @@ const CollectionPage: React.FC<CollectionPageProps> = ({ collection, onViewAlbum
       items = items.filter(item => item.year >= startYear && item.year <= endYear);
     }
     if (filterStore) {
-        // FIX: Filter based on the 'provenance' array, checking for a purchase from the selected store.
         items = items.filter(item => item.provenance.some(p => p.type === 'purchase' && p.from === filterStore));
     }
 
     // Sort
     items.sort((a, b) => {
-      const aVal = a[sortKey] || (sortKey === 'rating' ? 0 : '');
-      const bVal = b[sortKey] || (sortKey === 'rating' ? 0 : '');
+      let aVal, bVal;
+      if (sortKey === 'rating') {
+        aVal = a.ratings[currentUser.id] || 0;
+        bVal = b.ratings[currentUser.id] || 0;
+      } else {
+        aVal = a[sortKey] || '';
+        bVal = b[sortKey] || '';
+      }
+      
       if (aVal < bVal) return sortOrder === 'asc' ? -1 : 1;
       if (aVal > bVal) return sortOrder === 'asc' ? 1 : -1;
+
       // Secondary sort by artist then album to keep things consistent
       if (a.artist < b.artist) return -1;
       if (a.artist > b.artist) return 1;
@@ -61,7 +69,7 @@ const CollectionPage: React.FC<CollectionPageProps> = ({ collection, onViewAlbum
     });
 
     return items;
-  }, [collection, sortKey, sortOrder, filterGenre, filterDecade, filterStore]);
+  }, [collection, sortKey, sortOrder, filterGenre, filterDecade, filterStore, currentUser.id]);
 
   return (
     <div className="animate-fade-in">
@@ -80,7 +88,7 @@ const CollectionPage: React.FC<CollectionPageProps> = ({ collection, onViewAlbum
       {filteredAndSortedCollection.length > 0 ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
           {filteredAndSortedCollection.map((album) => (
-            <AlbumCard key={`${album.artist}-${album.album}`} album={album} onClick={() => onViewAlbum(album)} />
+            <AlbumCard key={`${album.artist}-${album.album}`} album={album} currentUser={currentUser} onClick={() => onViewAlbum(album)} />
           ))}
         </div>
       ) : (

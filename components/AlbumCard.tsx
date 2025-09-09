@@ -1,14 +1,18 @@
+
 import React from 'react';
-import type { CollectionAlbumInfo } from '../types';
+import type { CollectionAlbumInfo, User } from '../types';
 import { RecordIcon } from './icons/RecordIcon';
 import StarRating from './StarRating';
 
 interface AlbumCardProps {
   album: CollectionAlbumInfo;
+  currentUser: User;
   onClick: () => void;
 }
 
-const AlbumCard: React.FC<AlbumCardProps> = ({ album, onClick }) => {
+const AlbumCard: React.FC<AlbumCardProps> = ({ album, currentUser, onClick }) => {
+  const userRating = album.ratings[currentUser.id];
+
   return (
     <button onClick={onClick} className="group text-left">
       <div className="aspect-square bg-gray-800 rounded-lg overflow-hidden relative shadow-lg shadow-black/30 transition-transform duration-300 group-hover:scale-105">
@@ -24,9 +28,9 @@ const AlbumCard: React.FC<AlbumCardProps> = ({ album, onClick }) => {
       <div className="mt-3 text-white">
         <h3 className="font-bold truncate">{album.album}</h3>
         <p className="text-sm text-gray-400 truncate">{album.artist}</p>
-        {album.rating !== undefined && (
+        {userRating !== undefined && (
           <div className="mt-1">
-            <StarRating rating={album.rating} isDisplayOnly={true} />
+            <StarRating rating={userRating} isDisplayOnly={true} />
           </div>
         )}
       </div>

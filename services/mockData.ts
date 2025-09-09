@@ -1,3 +1,4 @@
+
 // FIX: Changed 'import type' to a regular 'import' for 'ActivityType' because it is an enum used as a value.
 import { type User, type ActivityEvent, ActivityType, type CollectionAlbumInfo } from '../types';
 
@@ -5,34 +6,36 @@ const MOCK_COLLECTION_1: CollectionAlbumInfo[] = [
   {
     artist: 'Fleetwood Mac', album: 'Rumours', coverArtUrls: ['https://upload.wikimedia.org/wikipedia/en/f/fb/FMacRumours.png'], year: 1977, genre: 'Soft Rock',
     provenance: [{ type: 'purchase', from: 'Vintage Vinyl', date: '2023-05-15', price: 25.99 }],
-    rating: 5, isPublic: true, forTrade: false,
+    isPublic: true, forTrade: false,
+    ratings: { 'user-1': 5 },
     albumDescription: "A blockbuster album born from intense personal turmoil, Rumours is a masterpiece of soft rock, featuring impeccable songwriting and layered vocal harmonies.",
-    historicalSignificance: "One of the best-selling albums of all time, its success cemented Fleetwood Mac as superstars and defined the sound of late '70s radio.",
+    historicalSignificance: "One of the best-selling albums of all time, its success cemented Fleetwood Mac as superstars and defined the sound of late '7s radio.",
     musicalStyle: "A polished blend of pop, rock, and folk with a distinct Californian sound.",
     legacy: "Its raw emotional honesty, combined with commercial success, has made it a timeless classic.",
     buyThisIf: [], avoidThisIf: [], notableFacts: [], personalRecommendation: "",
     tracklist: [
-      { title: 'Go Your Own Way', description: "A driving and bitter breakup anthem from Lindsey Buckingham.", rating: 5, youtubeMusicUrl: "https://music.youtube.com/search?q=Fleetwood+Mac+Go+Your+Own+Way" },
-      { title: 'Dreams', description: "Stevie Nicks' iconic, ethereal response to the breakup.", rating: 5, youtubeMusicUrl: "https://music.youtube.com/search?q=Fleetwood+Mac+Dreams" },
+      { title: 'Go Your Own Way', description: "A driving and bitter breakup anthem from Lindsey Buckingham.", ratings: { 'user-1': 5 }, youtubeMusicUrl: "https://music.youtube.com/search?q=Fleetwood+Mac+Go+Your+Own+Way" },
+      { title: 'Dreams', description: "Stevie Nicks' iconic, ethereal response to the breakup.", ratings: { 'user-1': 5 }, youtubeMusicUrl: "https://music.youtube.com/search?q=Fleetwood+Mac+Dreams" },
     ],
     youtubeLinks: [],
-    comments: [{ text: "First listen, absolutely blown away.", timestamp: "2024-07-21T19:30:00Z" }]
+    userComments: { 'user-1': [{ text: "First listen, absolutely blown away.", timestamp: "2024-07-21T19:30:00Z" }] }
   },
   {
     artist: 'Kendrick Lamar', album: 'To Pimp a Butterfly', coverArtUrls: ['https://upload.wikimedia.org/wikipedia/en/f/f6/Kendrick_Lamar_-_To_Pimp_a_Butterfly.png'], year: 2015, genre: 'Conscious Hip Hop',
     provenance: [{ type: 'purchase', from: 'Vintage Vinyl', date: '2023-02-10', price: 28.00 }],
-    rating: 5, isPublic: true, forTrade: false,
+    isPublic: true, forTrade: false,
+    ratings: { 'user-1': 5 },
     albumDescription: "A dense and ambitious album that weaves together jazz, funk, and soul to explore themes of race, identity, and black culture in America.",
     historicalSignificance: "Released during a time of heightened racial tension, 'Alright' became an anthem for the Black Lives Matter movement.",
     musicalStyle: "Experimental hip-hop featuring live instrumentation from luminaries like Thundercat and Terrace Martin.",
     legacy: "Praised for its lyrical depth and musical complexity, it expanded the boundaries of what a mainstream hip-hop album could be.",
     buyThisIf: [], avoidThisIf: [], notableFacts: [], personalRecommendation: "",
     tracklist: [
-      { title: 'King Kunta', description: "A defiant, funky track addressing his critics.", rating: 5, youtubeMusicUrl: "https://music.youtube.com/search?q=Kendrick+Lamar+King+Kunta" },
-      { title: 'Alright', description: "An anthem of hope and resilience in the face of police brutality.", rating: 5, youtubeMusicUrl: "https://music.youtube.com/search?q=Kendrick+Lamar+Alright" },
+      { title: 'King Kunta', description: "A defiant, funky track addressing his critics.", ratings: { 'user-1': 5 }, youtubeMusicUrl: "https://music.youtube.com/search?q=Kendrick+Lamar+King+Kunta" },
+      { title: 'Alright', description: "An anthem of hope and resilience in the face of police brutality.", ratings: { 'user-1': 5 }, youtubeMusicUrl: "https://music.youtube.com/search?q=Kendrick+Lamar+Alright" },
     ],
     youtubeLinks: [],
-    comments: []
+    userComments: {}
   },
 ];
 
@@ -40,30 +43,32 @@ const MOCK_COLLECTION_2: CollectionAlbumInfo[] = [
   {
     artist: 'Pink Floyd', album: 'The Dark Side of the Moon', coverArtUrls: ['https://upload.wikimedia.org/wikipedia/en/3/3b/Dark_Side_of_the_Moon.png'], year: 1973, genre: 'Progressive Rock',
     provenance: [{ type: 'purchase', from: 'Groove Records', date: '2024-01-20', price: 30.00 }],
-    rating: 4, isPublic: true, forTrade: true, condition: 'Very Good Plus (VG+)',
+    isPublic: true, forTrade: true, condition: 'Very Good Plus (VG+)',
+    ratings: { 'user-2': 4 },
     albumDescription: "A concept album exploring themes of conflict, greed, time, and mental illness, renowned for its philosophical lyrics and complex instrumentation.",
     historicalSignificance: "One of the most commercially successful and critically acclaimed albums ever, it remained on the Billboard charts for over 14 years.",
     musicalStyle: "Psychedelic and progressive rock featuring extended instrumental passages, tape loops, and analog synthesizers.",
     legacy: "Its iconic cover and ambitious themes have made it a cultural touchstone, influencing generations of musicians.",
     buyThisIf: [], avoidThisIf: [], notableFacts: [], personalRecommendation: "",
-    tracklist: [ { title: 'Money', description: 'Famous for its unusual time signature and cash register sound effects.', rating: 5, youtubeMusicUrl: "" }, { title: 'Time', description: 'Features a dramatic introduction of ticking clocks.', rating: 5, youtubeMusicUrl: "" }],
-    youtubeLinks: [], comments: [{ text: 'A true masterpiece.', timestamp: '2024-07-20T10:00:00Z' }]
+    tracklist: [ { title: 'Money', description: 'Famous for its unusual time signature and cash register sound effects.', ratings: { 'user-2': 5 }, youtubeMusicUrl: "" }, { title: 'Time', description: 'Features a dramatic introduction of ticking clocks.', ratings: { 'user-2': 5 }, youtubeMusicUrl: "" }],
+    youtubeLinks: [], userComments: { 'user-2': [{ text: 'A true masterpiece.', timestamp: '2024-07-20T10:00:00Z' }] }
   },
   {
     artist: 'Fleetwood Mac', album: 'Rumours', coverArtUrls: ['https://upload.wikimedia.org/wikipedia/en/f/fb/FMacRumours.png'], year: 1977, genre: 'Soft Rock',
     provenance: [{ type: 'purchase', from: 'Electric Sounds', date: '2024-03-10', price: 22.50 }],
-    rating: 4, isPublic: true, forTrade: true, condition: 'Very Good Plus (VG+)',
+    isPublic: true, forTrade: true, condition: 'Very Good Plus (VG+)',
+    ratings: { 'user-2': 4 },
     albumDescription: "A blockbuster album born from intense personal turmoil, Rumours is a masterpiece of soft rock, featuring impeccable songwriting and layered vocal harmonies.",
-    historicalSignificance: "One of the best-selling albums of all time, its success cemented Fleetwood Mac as superstars and defined the sound of late '70s radio.",
+    historicalSignificance: "One of the best-selling albums of all time, its success cemented Fleetwood Mac as superstars and defined the sound of late '7s radio.",
     musicalStyle: "A polished blend of pop, rock, and folk with a distinct Californian sound.",
     legacy: "Its raw emotional honesty, combined with commercial success, has made it a timeless classic.",
     buyThisIf: [], avoidThisIf: [], notableFacts: [], personalRecommendation: "",
     tracklist: [
-      { title: 'Go Your Own Way', description: "A driving and bitter breakup anthem from Lindsey Buckingham.", rating: 4, youtubeMusicUrl: "https://music.youtube.com/search?q=Fleetwood+Mac+Go+Your+Own+Way" },
-      { title: 'Dreams', description: "Stevie Nicks' iconic, ethereal response to the breakup.", rating: 5, youtubeMusicUrl: "https://music.youtube.com/search?q=Fleetwood+Mac+Dreams" },
+      { title: 'Go Your Own Way', description: "A driving and bitter breakup anthem from Lindsey Buckingham.", ratings: { 'user-2': 4 }, youtubeMusicUrl: "https://music.youtube.com/search?q=Fleetwood+Mac+Go+Your+Own+Way" },
+      { title: 'Dreams', description: "Stevie Nicks' iconic, ethereal response to the breakup.", ratings: { 'user-2': 5 }, youtubeMusicUrl: "https://music.youtube.com/search?q=Fleetwood+Mac+Dreams" },
     ],
     youtubeLinks: [],
-    comments: [{ text: "Such a classic album, never gets old.", timestamp: "2024-07-22T12:00:00Z" }]
+    userComments: { 'user-2': [{ text: "Such a classic album, never gets old.", timestamp: "2024-07-22T12:00:00Z" }] }
   }
 ];
 
@@ -80,12 +85,15 @@ export const currentUserData: User = {
         {
             artist: 'Massive Attack', album: 'Mezzanine', coverArtUrls: ['https://upload.wikimedia.org/wikipedia/en/8/85/Massive_Attack_-_Mezzanine.png'], year: 1998, genre: 'Trip Hop',
             provenance: [{ type: 'purchase', from: 'Electric Sounds', date: '2022-11-05', price: 22.00 }],
-            rating: 4, isPublic: true, forTrade: true, condition: 'Very Good (VG)',
+            isPublic: true, forTrade: true, condition: 'Very Good (VG)',
+            ratings: { 'user-1': 4 },
             albumDescription: "A dark, atmospheric, and influential album that defined the trip-hop genre.",
-            historicalSignificance: "", musicalStyle: "", legacy: "", buyThisIf: [], avoidThisIf: [], notableFacts: [], personalRecommendation: "", tracklist: [], youtubeLinks: [], comments: []
+            historicalSignificance: "", musicalStyle: "", legacy: "", buyThisIf: [], avoidThisIf: [], notableFacts: [], personalRecommendation: "", tracklist: [], youtubeLinks: [], userComments: {}
         }
     ],
     followedUserIds: ['user-2'],
+    sharedLibraryWith: [],
+    libraryShareRequests: {},
 };
 
 export const allUsersData: User[] = [
@@ -102,12 +110,15 @@ export const allUsersData: User[] = [
             {
                 artist: 'Radiohead', album: 'OK Computer', coverArtUrls: ['https://upload.wikimedia.org/wikipedia/en/b/ba/Radioheadokcomputer.png'], year: 1997, genre: 'Alternative Rock',
                 provenance: [{ type: 'purchase', from: 'Vintage Vinyl', date: '2023-08-19', price: 29.99 }],
-                rating: 5, isPublic: true, forTrade: true, condition: 'Near Mint (NM)',
+                isPublic: true, forTrade: true, condition: 'Near Mint (NM)',
+                ratings: { 'user-2': 5 },
                 albumDescription: "A seminal album exploring themes of consumerism, globalization, and anti-modernism.",
-                historicalSignificance: "", musicalStyle: "", legacy: "", buyThisIf: [], avoidThisIf: [], notableFacts: [], personalRecommendation: "", tracklist: [], youtubeLinks: [], comments: []
+                historicalSignificance: "", musicalStyle: "", legacy: "", buyThisIf: [], avoidThisIf: [], notableFacts: [], personalRecommendation: "", tracklist: [], youtubeLinks: [], userComments: {}
             }
         ],
-        followedUserIds: [],
+        followedUserIds: ['user-1'],
+        sharedLibraryWith: [],
+        libraryShareRequests: {},
     },
     {
         id: 'user-3',
@@ -117,6 +128,8 @@ export const allUsersData: User[] = [
         wishlist: [],
         tradeList: [],
         followedUserIds: [],
+        sharedLibraryWith: [],
+        libraryShareRequests: {},
     }
 ];
 
