@@ -1,18 +1,19 @@
-
 import React, { useState, useMemo } from 'react';
 import type { CollectionAlbumInfo, User } from '../types';
 import AlbumCard from './AlbumCard';
 import SortFilterControls from './SortFilterControls';
+import { AddIcon } from './icons/AddIcon';
 
 interface CollectionPageProps {
   collection: CollectionAlbumInfo[];
   currentUser: User;
   onViewAlbum: (album: CollectionAlbumInfo) => void;
+  onAddRecord: () => void;
 }
 
 type SortKey = 'artist' | 'album' | 'year' | 'rating';
 
-const CollectionPage: React.FC<CollectionPageProps> = ({ collection, currentUser, onViewAlbum }) => {
+const CollectionPage: React.FC<CollectionPageProps> = ({ collection, currentUser, onViewAlbum, onAddRecord }) => {
   const [sortKey, setSortKey] = useState<SortKey>('artist');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [filterGenre, setFilterGenre] = useState<string>('');
@@ -75,14 +76,23 @@ const CollectionPage: React.FC<CollectionPageProps> = ({ collection, currentUser
     <div className="animate-fade-in">
       <div className="flex flex-col md:flex-row justify-between md:items-center mb-6 gap-4">
         <h2 className="text-3xl font-bold text-white">My Collection ({filteredAndSortedCollection.length})</h2>
-        <SortFilterControls
-            sortKey={sortKey} setSortKey={setSortKey}
-            sortOrder={sortOrder} setSortOrder={setSortOrder}
-            filterGenre={filterGenre} setFilterGenre={setFilterGenre}
-            filterDecade={filterDecade} setFilterDecade={setFilterDecade}
-            filterStore={filterStore} setFilterStore={setFilterStore}
-            genres={genres} decades={decades} stores={stores}
-        />
+        <div className="flex flex-wrap items-center gap-2 justify-end">
+          <button 
+              onClick={onAddRecord}
+              className="inline-flex items-center gap-2 bg-teal-500 hover:bg-teal-600 text-white font-bold py-2 px-4 rounded-lg transition"
+          >
+              <AddIcon className="w-5 h-5"/>
+              Add Record
+          </button>
+          <SortFilterControls
+              sortKey={sortKey} setSortKey={setSortKey}
+              sortOrder={sortOrder} setSortOrder={setSortOrder}
+              filterGenre={filterGenre} setFilterGenre={setFilterGenre}
+              filterDecade={filterDecade} setFilterDecade={setFilterDecade}
+              filterStore={filterStore} setFilterStore={setFilterStore}
+              genres={genres} decades={decades} stores={stores}
+          />
+        </div>
       </div>
       
       {filteredAndSortedCollection.length > 0 ? (

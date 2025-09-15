@@ -1,4 +1,3 @@
-
 import { GoogleGenAI, Type } from "@google/genai";
 import { currentUserData, allUsersData, activityFeedData, tradeOffersData } from './mockData';
 import type { 
@@ -488,3 +487,26 @@ export const getFullAlbumAnalysis = async (albumInfo: { artist: string; album: s
   albumDatabase[albumId] = { ...albumDatabase[albumId], ...analysisResult }; // Save to cache
   return analysisResult;
 };
+
+export const parseAlbumsFromText = async (text: string): Promise<{ artist: string, album: string }[]> => {
+    const prompt = `Parse the following text to identify a list of music albums. For each album, provide the artist and the album title. The text might contain conjunctions, different phrasing, and album numbers. For example, for "Meatloaf's bat out of hell 1, and 2", you should return two separate entries. Respond ONLY with a valid JSON array of objects, where each object has 'artist' and 'album' keys. Text: "${text}"`;
+    const response = await ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: prompt,
+        config: {
+            responseMimeType: "application/json",
+            responseSchema: {
+                type: Type.ARRAY,
+                items: {
+                    type: Type.OBJECT,
+                    properties: {
+                        artist: { type: Type.STRING },
+                        album: { type: Type.STRING },
+                    },
+                    required: ["artist", "album"]
+                }
+            }
+        }
+    });
+    return JSON.parse(response.text);
+}

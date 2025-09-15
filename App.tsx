@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useEffect } from 'react';
 import Header from './components/Header';
 import CollectionPage from './components/CollectionPage';
@@ -8,6 +7,7 @@ import AlbumScanner from './components/AlbumScanner';
 import CommunityPage from './components/CommunityPage';
 import TradesPage from './components/TradesPage';
 import AddToCollectionModal from './components/AddToCollectionModal';
+import AddRecordModal from './components/AddRecordModal';
 import AlbumPage from './components/AlbumPage';
 import ProposeTradeModal from './components/ProposeTradeModal';
 import UserProfilePage from './components/UserProfilePage';
@@ -98,6 +98,8 @@ const App: React.FC = () => {
 
     const [addModalData, setAddModalData] = useState<{ analysis: AlbumAnalysisResult, userImage?: string } | null>(null);
     const [proposeTradeData, setProposeTradeData] = useState<{ wantedAlbum: CollectionAlbumInfo, toUser: User } | null>(null);
+    const [isAddRecordModalOpen, setIsAddRecordModalOpen] = useState(false);
+
 
     // Derived state
     const myTradeList = useMemo(() => myCollection.filter(a => a.forTrade), [myCollection]);
@@ -129,6 +131,11 @@ const App: React.FC = () => {
 
     const openAddToCollectionModal = (analysis: AlbumAnalysisResult, userImage?: string) => {
         setAddModalData({ analysis, userImage });
+    };
+
+    const handleAddSuccess = async () => {
+        setIsAddRecordModalOpen(false);
+        await loadData();
     };
 
     const handleConfirmAddToCollection = async (purchaseDetails: { price: number, store: string }) => {
@@ -441,7 +448,7 @@ const App: React.FC = () => {
                         onAddToWishlist={scannerOnAddToWishlist}
                         onGoToTradeMatches={handleGoToTradeMatches}
                     />,
-                    'collection': <CollectionPage collection={myCollection} currentUser={currentUser!} onViewAlbum={handleViewAlbum} />,
+                    'collection': <CollectionPage collection={myCollection} currentUser={currentUser!} onViewAlbum={handleViewAlbum} onAddRecord={() => setIsAddRecordModalOpen(true)} />,
                     'wishlist': <WishlistPage 
                                     wishlist={myWishlist} 
                                     onUpdatePriority={handleUpdateWishlistPriority}
@@ -562,6 +569,18 @@ const App: React.FC = () => {
                     stores={stores}
                     onClose={() => setAddModalData(null)}
                     onSave={handleConfirmAddToCollection}
+                />
+            )}
+            {isAddRecordModalOpen && (
+                <AddRecordModal
+                    collection={myCollection}
+                    onClose={() => setIsAddRecordModalOpen(false)}
+                    onAddSuccess={handleAddSuccess}
+                    onInitiateAddToCollection={(analysis, image) => {
+                        // We might not close the add record modal immediately,
+                        // to allow adding more records. The user can close it manually.
+                        openAddToCollectionModal(analysis, image);
+                    }}
                 />
             )}
             {proposeTradeData && (
