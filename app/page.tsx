@@ -52,7 +52,7 @@ const TabButton: React.FC<TabButtonProps> = ({ icon, label, isActive, onClick })
 
 const getAlbumId = (album: { artist: string; album: string }) => `${album.artist}-${album.album}`.toLowerCase().replace(/\s/g, '-');
 
-const Page: React.FC = () => {
+const App: React.FC = () => {
     const [activeTab, setActiveTab] = useState<Tab>('scanner');
     const [currentView, setCurrentView] = useState<View>({ page: 'tabs' });
     
@@ -602,4 +602,4 @@ const Page: React.FC = () => {
     );
 };
 
-export default Page;
+export default App;

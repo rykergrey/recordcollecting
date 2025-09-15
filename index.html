@@ -1,66 +1,12 @@
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-," />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>RecordCollect.ing</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet">
-    <style>
-      @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(10px); }
-        to { opacity: 1; transform: translateY(0); }
-      }
-      .animate-fade-in {
-        animation: fadeIn 0.5s ease-out forwards;
-      }
-      .star-rating-input {
-        display: none;
-      }
-      .star-rating-label {
-        cursor: pointer;
-        color: #4a5568; /* gray-600 */
-      }
-      .star-rating-input:checked ~ .star-rating-label,
-      .star-rating-input:hover ~ .star-rating-label,
-      .star-rating-label:hover {
-        color: #f59e0b; /* amber-500 */
-      }
-      .star-rating-display .star-rating-label {
-        cursor: default;
-      }
-    </style>
-    <script>
-      tailwind.config = {
-        theme: {
-          extend: {
-            fontFamily: {
-              sans: ['Inter', 'sans-serif'],
-              mono: ['Roboto Mono', 'monospace'],
-            },
-          },
-        },
-      }
-    </script>
-  <script type="importmap">
+<script type="importmap">
 {
   "imports": {
-    "react": "https://aistudiocdn.com/react@^19.1.1",
-    "react-dom/": "https://aistudiocdn.com/react-dom@^19.1.1/",
-    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.17.0",
-    "react/": "https://aistudiocdn.com/react@^19.1.1/",
     "next": "https://aistudiocdn.com/next@^15.5.3",
     "next/": "https://aistudiocdn.com/next@^15.5.3/",
-    "tailwindcss": "https://aistudiocdn.com/tailwindcss@^4.1.13"
+    "tailwindcss": "https://aistudiocdn.com/tailwindcss@^4.1.13",
+    "react": "https://aistudiocdn.com/react@^19.1.1",
+    "react/": "https://aistudiocdn.com/react@^19.1.1/",
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.19.0"
   }
 }
 </script>
-</head>
-  <body class="bg-gray-900">
-    <div id="root"></div>
-    <script type="module" src="/index.tsx"></script>
-  </body>
-</html>
